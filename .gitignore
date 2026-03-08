@@ -1,0 +1,15 @@
+# Environments
+pinet-venv/
+venv/
+env/
+
+# Caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Data and Models
+data_cache/
+policies_rp/
+*.pkl
+*.csv
