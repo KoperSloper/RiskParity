@@ -1,63 +1,40 @@
-import sys
 import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from deep_risk_parity.core.trainer import DeepRPTrainer
-from deep_risk_parity.utils.evaluation import evaluate_nn, evaluate_nominal_rp, evaluate_equal_weight
 from deep_risk_parity.utils.data_utils import load_dataset
-from deep_risk_parity.utils.simulate_data import generate_dataset
+from deep_risk_parity.utils.evaluation import evaluate_nn, evaluate_nominal_rp, evaluate_equal_weight
 
 def main():
     HORIZON = 48    
     LOOKBACK = 24
-    GAMMA   = 3     
-    
-    filename = f"risk_parity_data_h{HORIZON}_l{LOOKBACK}.pkl"
-    data_path = os.path.join(os.path.dirname(__file__), "data_cache", filename)
-    data_path = os.path.abspath(data_path)
+    GAMMA = 3     
+    HIDDEN = 64
 
-    if not os.path.exists(data_path):
-        generate_dataset(output_path=data_path, horizon=HORIZON, lookback=LOOKBACK)
-    
+    data_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "data_cache", f"risk_parity_data_h{HORIZON}_l{LOOKBACK}.pkl"))
     data = load_dataset(data_path)
-    X_train, Y_train, Sig_train = data['train_data']
     X_test, Y_test, Sig_test = data['test_data']
     
-    K = Y_train.shape[2]
-    
-    HIDDEN = 64         
-    LR = 1e-3           
-    
-    print(f"--- Running Dynamic Risk Parity Experiment (H={HORIZON}) ---")
-    print(f"Gamma={GAMMA}, K_assets={K}")
-    
+    K = Y_test.shape[2]
+    feature_dim = X_test.shape[2]
+
     trainer = DeepRPTrainer(
-        feature_dim=X_train.shape[2],
+        feature_dim=feature_dim,
         K_assets=K,
         gamma=GAMMA,
-        hidden=HIDDEN,
-        lr=LR
+        hidden=HIDDEN
     )
     
-    trainer.train(
-        data, 
-        epochs=15, 
-        batch_size=128, 
-        eval_frequency=10, 
-        patience=10
-    )
-
     policy_name = f"rp_policy_h{HORIZON}_g{GAMMA}.pkl"
-    policy_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "policies_rp"))
-    trainer.save_policy(os.path.join(policy_dir, policy_name))
+    policy_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "policies_rp", policy_name))
+    
+    if not os.path.exists(policy_path):
+        raise FileNotFoundError(f"Could not find saved policy at {policy_path}")
+        
+    trainer.load_policy(policy_path)
 
-    # Evaluate all three strategies
     ce_nn, se_nn, w_nn, m_nn = evaluate_nn(trainer, X_test, Y_test, Sig_test)
     ce_nrp, se_nrp, w_nrp, m_nrp = evaluate_nominal_rp(Y_test, Sig_test, GAMMA)
     ce_ew, se_ew, w_ew, m_ew = evaluate_equal_weight(Y_test, GAMMA)
-    
-    # Updated print block to include Max DD and Sortino
+
     print("\n" + "="*85)
     print(f"{'STRATEGY':<20} | {'CE (Ann) ± SE':<20} | {'FINAL WEALTH':<12} | {'MAX DD':<10} | {'SORTINO':<8}")
     print("-" * 85)

@@ -17,10 +17,9 @@ class DeepRPTrainer:
         self.key = jax.random.PRNGKey(seed)
         
         dummy_x = jnp.zeros((1, feature_dim))
-        dummy_w = jnp.ones((1, self.K)) / self.K
         
         self.key, init_key = jax.random.split(self.key)
-        self.params = self.model.init(init_key, dummy_x, dummy_w)
+        self.params = self.model.init(init_key, dummy_x)
 
         self.opt = optax.adamw(learning_rate=lr)
         self.opt_state = self.opt.init(self.params)
@@ -51,7 +50,7 @@ class DeepRPTrainer:
                 sigma_t = batch_Sigma[:, t, :, :]
                 
                 # NN outputs budgets
-                b_t = self.model.apply(params, obs, w_prev)
+                b_t = self.model.apply(params, obs)
                 
                 # risk parity solver outputs new weights
                 w_post = batch_risk_parity(b_t, sigma_t)

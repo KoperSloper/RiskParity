@@ -8,9 +8,8 @@ class RiskParityPolicy(nn.Module):
     min_budget: float = 0.05
 
     @nn.compact
-    def __call__(self, x, w_prev):
-        inputs = jnp.concatenate([x, w_prev], axis=-1)
-        h = inputs
+    def __call__(self, x):
+        h = x
         
         for _ in range(self.n_layers):
             h = nn.Dense(self.hidden, kernel_init=nn.initializers.glorot_uniform())(h)
