@@ -18,16 +18,21 @@ pip install jax jaxlib flax optax numpy scipy matplotlib
 
 ### usage
 
-To run the whole pipeline (simulates synthetic AR(1) market data, trains the policy, and evaluates it):
+Everything is routed through `main.py` using command-line arguments.
 
+To run the whole pipeline (simulates synthetic AR(1) market data, trains the policy, and evaluates it):
 ```bash
-python run_experiment.py
+python main.py --mode train
 ```
 
-If you already have a trained policy and just want to run the test set evaluation:
-
+To evaluate a previously trained policy on the test set:
 ```bash
-python evaluate_saved_policy.py
+python main.py --mode eval
+```
+
+To generate sensitivity plots (saved to `assets/`):
+```bash
+python main.py --mode visualize
 ```
 
 ### results
@@ -59,10 +64,10 @@ It's fast, exact, and fits nicely into `jax.custom_vjp`.
 
 ### code structure
 
+- `main.py`: Single entry point for train/eval/viz.
 - `deep_risk_parity/core/policy.py`: The Flax MLP.
 - `deep_risk_parity/core/solver.py`: The Newton-Raphson solver + IFT VJP.
-- `deep_risk_parity/core/trainer.py`: The Optax training loop (heavily relying on `jax.lax.scan`).
-- `run_experiment.py`: Entry point.
+- `deep_risk_parity/core/trainer.py`: The Optax training loop.
 
 ---
 ### contact
